@@ -12,6 +12,11 @@
 ![image](https://github.com/ugunNet21/chat-app-laravel/assets/45864165/2053ad03-e70a-43eb-b284-887bbd354be3)
 
 
+## REStFul APi
+
+![image](https://github.com/ugunNet21/chat-app-laravel/assets/45864165/90ed5d8f-859f-4405-94b4-9655cf476bd5)
+
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
