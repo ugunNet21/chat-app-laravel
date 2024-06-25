@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body,
+        html {
+            height: 100%;
+        }
+
+        .active {
+            color: blue;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col justify-between h-full">
+
+    <!-- Main Content -->
+    <div id="content" class="flex-grow p-4">
+        <div id="chat-section">
+            <h1 class="text-2xl">Chat</h1>
+            <div id="chat-messages" class="overflow-y-auto h-64 bg-white p-4"></div>
+            <form id="chat-form" class="flex mt-4">
+                <input type="text" id="chat-user" placeholder="Your name" class="border p-2 mr-2 flex-grow">
+                <input type="text" id="chat-message" placeholder="Your message" class="border p-2 mr-2 flex-grow">
+                <button type="submit" class="bg-blue-500 text-white p-2">Send</button>
+            </form>
+            <!-- Template untuk pesan -->
+            <template id="message-template">
+                <div class="p-2 border-b flex items-center justify-between" data-message-id>
+                    <div class="flex items-center">
+                        <strong class="mr-2" id="message-user"></strong>
+                        <span id="message-content"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <button class="text-gray-500 hover:text-red-500 mr-2" onclick="deleteMessage(this)">
+                            Delete
+                        </button>
+                        <button class="text-gray-500 hover:text-blue-500" onclick="likeMessage(this)">
+                            Like
+                        </button>
+                        <span class="ml-2 text-gray-500">0 Likes</span>
+                        <!-- Placeholder for like count -->
+                    </div>
+                </div>
+            </template>
+
+        </div>
+    </div>
+    <button id="emoji-button" class="bg-gray-200 text-gray-600 hover:bg-gray-300 px-2 rounded">
+        😊
+    </button>
+    <div id="emoji-panel" class="hidden absolute bottom-12 right-0 bg-white shadow-md border rounded p-2">
+        <button onclick="insertEmoji('😊')">😊</button>
+        <button onclick="insertEmoji('😄')">😄</button>
+        <button onclick="insertEmoji('😎')">😎</button>
+        <button onclick="insertEmoji('👍')">👍</button>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bg-white shadow fixed bottom-0 inset-x-0">
+        <div class="flex justify-around">
+            <a href="#" class="w-full py-2 px-4 text-center active" onclick="showContent('chat')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h10m-9 4h9" />
+                </svg>
+                <span>Chat</span>
+            </a>
+            <a href="#" class="w-full py-2 px-4 text-center" onclick="showContent('moment')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 11V6a1 1 0 012 0v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H6a1 1 0 110-2h5z" />
+                </svg>
+                <span>Moment</span>
+            </a>
+            <a href="#" class="w-full py-2 px-4 text-center" onclick="showContent('friends')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16h6M4 6h16M4 20h16M4 12h16" />
+                </svg>
+                <span>Friends</span>
+            </a>
+            <a href="#" class="w-full py-2 px-4 text-center" onclick="showContent('me')">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zM6 18a6 6 0 0112 0H6z" />
+                </svg>
+                <span>Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        function showContent(section) {
+            const content = document.getElementById('content');
+            if (section === 'chat') {
+                content.style.display = 'flex'; // Tampilkan konten chat
+                loadChats(); // Muat pesan yang sudah ada
+            } else {
+                content.style.display = 'none';
+            }
+        }
+
+        document.getElementById('chat-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const user = document.getElementById('chat-user').value;
+            const message = document.getElementById('chat-message').value;
+
+            fetch('http://127.0.0.1:8000/api/chats', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ user, message, likes: 0 }) // Include likes in the request
+            })
+                .then(response => response.json())
+                .then(data => {
+                    appendMessage(data.id, data.user, data.message, data.likes); // Include the message ID and likes
+                    document.getElementById('chat-form').reset();
+                });
+        });
+
+        function loadChats() {
+            fetch('http://127.0.0.1:8000/api/chats')
+                .then(response => response.json())
+                .then(data => {
+                    const chatMessages = document.getElementById('chat-messages');
+                    chatMessages.innerHTML = '';
+                    data.forEach(chat => {
+                        // appendMessage(chat.user, chat.message);
+                        appendMessage(chat.id, chat.user, chat.message, chat.likes);
+                    });
+                });
+        }
+
+        function appendMessage(id, user, message, likes = 0) {
+            const chatMessages = document.getElementById('chat-messages');
+            const template = document.getElementById('message-template').content.cloneNode(true);
+            const messageUser = template.querySelector('#message-user');
+            const messageContent = template.querySelector('#message-content');
+            const messageElement = template.querySelector('[data-message-id]');
+            const likeSpan = template.querySelector('span.ml-2');
+
+            messageElement.dataset.messageId = id; // Set the data-message-id attribute
+            messageUser.textContent = user;
+            messageContent.textContent = message;
+            likeSpan.textContent = `${likes} Likes`; // Set the initial like count
+
+            chatMessages.appendChild(template);
+        }
+
+
+        function deleteMessage(button) {
+            const messageElement = button.closest('.border-b');
+            const messageId = messageElement.dataset.messageId;
+
+            fetch(`http://127.0.0.1:8000/api/chats/${messageId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        messageElement.remove(); // Remove the message from the DOM
+                    } else {
+                        return response.json().then(error => { throw new Error(error.message) });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting message:', error);
+                });
+        }
+
+
+        function likeMessage(button) {
+            const messageElement = button.closest('.border-b');
+            const messageId = messageElement.dataset.messageId;
+            const likeSpan = messageElement.querySelector('span.ml-2');
+
+            fetch(`http://127.0.0.1:8000/api/chats/${messageId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    likeSpan.textContent = `${data.likes} Likes`;
+                })
+                .catch(error => {
+                    console.error('Error liking message:', error);
+                });
+        }
+
+        // Emoji functionality
+        const emojiButton = document.getElementById('emoji-button');
+        const emojiPanel = document.getElementById('emoji-panel');
+
+        emojiButton.addEventListener('click', () => {
+            emojiPanel.classList.toggle('hidden');
+        });
+
+        function insertEmoji(emoji) {
+            const messageInput = document.getElementById('chat-message');
+            messageInput.value += emoji;
+        }
+
+        // Load chats on page load
+        document.addEventListener('DOMContentLoaded', loadChats);
+    </script>
+</body>
+
+</html>
