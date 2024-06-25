@@ -15,6 +15,14 @@
         .active {
             color: blue;
         }
+
+        .message-left {
+            justify-content: flex-start;
+        }
+
+        .message-right {
+            justify-content: flex-end;
+        }
     </style>
 </head>
 
@@ -100,6 +108,8 @@
     </nav>
 
     <script>
+        let currentUser = '';
+
         function showContent(section) {
             const content = document.getElementById('content');
             if (section === 'chat') {
@@ -114,6 +124,7 @@
             e.preventDefault();
             const user = document.getElementById('chat-user').value;
             const message = document.getElementById('chat-message').value;
+            currentUser = user; // Set the current user
 
             fetch('http://127.0.0.1:8000/api/chats', {
                 method: 'POST',
@@ -156,9 +167,14 @@
             messageContent.textContent = message;
             likeSpan.textContent = `${likes} Likes`; // Set the initial like count
 
+            if (user === currentUser) {
+                messageElement.classList.add('message-right');
+            } else {
+                messageElement.classList.add('message-left');
+            }
+
             chatMessages.appendChild(template);
         }
-
 
         function deleteMessage(button) {
             const messageElement = button.closest('.border-b');
@@ -182,7 +198,6 @@
                     console.error('Error deleting message:', error);
                 });
         }
-
 
         function likeMessage(button) {
             const messageElement = button.closest('.border-b');
